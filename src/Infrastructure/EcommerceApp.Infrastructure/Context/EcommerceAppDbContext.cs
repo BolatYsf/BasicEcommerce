@@ -19,11 +19,15 @@ namespace EcommerceApp.Infrastructure.Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfiguration(new EmployeeConfig())
-                .ApplyConfiguration(new MallConfig());
+                .ApplyConfiguration(new MallConfig())
+                .ApplyConfiguration(new ProductConfig())
+                .ApplyConfiguration(new CategoryConfig());
             base.OnModelCreating(modelBuilder);
         }
 
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Mall> Malls { get; set; }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<Category> Categories { get; set; }
     }
 }

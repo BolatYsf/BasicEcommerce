@@ -1,4 +1,9 @@
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using EcommerceApp.Application.IoC;
 using EcommerceApp.Infrastructure.Context;
+using EcommerceApp.MVC.Models.SeedDataModel;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +14,36 @@ builder.Services.AddDbContext<EcommerceAppDbContext>(option =>
 {
     option.UseSqlServer(builder.Configuration.GetConnectionString("EcommerceConnString"));
 });
+
+builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
+
+builder.Host.ConfigureContainer<ContainerBuilder>(builder =>
+{
+    builder.RegisterModule(new DependencyResolver());
+});
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(_ =>
+{
+    _.LoginPath = "/Login/Login";
+    _.Cookie = new CookieBuilder
+    {
+        Name = "EcommerceCookie",
+        SecurePolicy = CookieSecurePolicy.Always,
+        HttpOnly = true, //client tarafýnda cookie gorunur olur disarýdan saldýrýlara acýk olur
+
+    };
+    _.ExpireTimeSpan = TimeSpan.FromMinutes(15);
+    _.SlidingExpiration = false; //istek geldiginde sürenin uzamasi
+    _.Cookie.MaxAge = _.ExpireTimeSpan;
+});
+
+
+builder.Services.AddSession(_ =>
+{
+    _.IdleTimeout = TimeSpan.FromMinutes(15);
+
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -19,11 +54,16 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+
+
+
+
+SeedData.Seed(app);
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
+app.UseSession();  //kullanýcý oturum bilgilerini tutar
 app.UseRouting();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 
@@ -38,6 +78,6 @@ app.MapControllerRoute(
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Login}/{action=Login}/{id?}");
 
 app.Run();
